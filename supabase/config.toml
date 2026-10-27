@@ -1,0 +1,6 @@
+[functions.ask-copeit]
+verify_jwt = false
+
+[functions.index-document]
+verify_jwt = false
+
