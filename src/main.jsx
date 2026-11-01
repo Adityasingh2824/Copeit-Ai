@@ -9,7 +9,7 @@ import { configured, supabase } from './lib/supabase';
 import AuthPage from './AuthPage';
 import AskCopeit from './AskCopeit';
 import EvidenceLibrary from './EvidenceLibrary';
-import EvidenceDiscovery, { DiscoveryHome } from './EvidenceDiscovery';
+import { DiscoveryHome } from './EvidenceDiscovery';
 import GoogleEvidenceDiscovery from './GoogleEvidenceDiscovery';
 import WorkspaceOnboarding from './WorkspaceOnboarding';
 import TeamAccess from './TeamAccess';
@@ -359,7 +359,7 @@ function Workspace({ session, demo = false, initialSection = 'Readiness', onExit
   if (section === 'Settings') return <TeamAccess tenant={tenant} onBack={() => setSection('Readiness')} onJoined={joinedTenant => { setTenant(joinedTenant); setSection('Readiness'); refresh(joinedTenant); }}/>;
   const navigateWorkflow = next => { setSection(next); setMobileNav(false); };
   const workflowLayoutProps = { error, section, nav, tenant, user, demo, mobileNav, onToggleNav: () => setMobileNav(value => !value), onNavigate: navigateWorkflow, onHome, onExit, onSignIn };
-  if (section === 'Evidence Discovery') return <WorkflowLayout {...workflowLayoutProps}>{demo ? <EvidenceDiscovery onNavigate={navigateWorkflow}/> : <GoogleEvidenceDiscovery onNavigate={navigateWorkflow}/>}</WorkflowLayout>;
+  if (section === 'Evidence Discovery') return <WorkflowLayout {...workflowLayoutProps}><GoogleEvidenceDiscovery onNavigate={navigateWorkflow}/></WorkflowLayout>;
   if (section === 'Readiness') return <WorkflowLayout {...workflowLayoutProps}><ReadinessDashboard products={products} profiles={profiles} sources={sources} tasks={tasks} onNavigate={navigateWorkflow} onAddProduct={() => navigateWorkflow('Products')}/></WorkflowLayout>;
   if (section === 'Requirements') return <WorkflowLayout {...workflowLayoutProps}><RequirementsWorkspace products={products} profiles={profiles} activeProductId={activeProductId} onSelectProduct={setActiveProductId} onSave={saveProductContext} saving={working}/></WorkflowLayout>;
   if (section === 'Decision') return <WorkflowLayout {...workflowLayoutProps}><DecisionWorkspace products={products} profiles={profiles} sources={sources} tasks={tasks} onNavigate={navigateWorkflow}/></WorkflowLayout>;
