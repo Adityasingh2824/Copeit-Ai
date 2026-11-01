@@ -1,0 +1,58 @@
+name: Deploy production
+
+on:
+  workflow_call:
+    inputs:
+      release_reason:
+        description: Release approval reference or change summary
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_ASK_COPEIT_MODE: offline
+      VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+      VITE_RELEASE: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build:production
+      - run: node scripts/write-security-headers.mjs
+      - run: npm run test:rag
+      - name: Confirm production release configuration
+        run: |
+          test -n "$PRODUCTION_URL"
+          test -n "$VITE_SUPABASE_URL"
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - name: Deploy Cloudflare production Worker
+        run: npx wrangler deploy --config wrangler.production.jsonc --assets dist --message "GitHub Actions production $GITHUB_SHA"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Run production public, signed-out, and synthetic-account smoke checks
+        run: npm run test:smoke
+        env:
+          SMOKE_BASE_URL: ${{ vars.PRODUCTION_URL }}
+          SMOKE_SUPABASE_URL: ${{ secrets.SMOKE_SUPABASE_URL }}
+          SMOKE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SMOKE_SUPABASE_PUBLISHABLE_KEY }}
+          SMOKE_TEST_EMAIL: ${{ secrets.SMOKE_TEST_EMAIL }}
+          SMOKE_TEST_PASSWORD: ${{ secrets.SMOKE_TEST_PASSWORD }}

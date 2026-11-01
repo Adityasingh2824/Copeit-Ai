@@ -4,3 +4,18 @@ dist/
 .env.local
 .env.*.local
 supabase/functions/.env
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
+
+.vercel
+.env*
+supabase/.temp/
+vite-staging-error.log
+vite-staging-output.log
+tmp/
+output/
+.env.rag-test.local.txt

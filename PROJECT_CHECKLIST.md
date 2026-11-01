@@ -103,13 +103,13 @@ Legend: `[x]` complete, `[~]` in progress or prepared, `[ ]` remaining.
 ## 6. Retrieval and generation
 
 - [ ] Implement query classification: record lookup, source-grounded question, unsupported legal/regulatory request, or out of scope.
-- [ ] Apply tenant and document permissions before retrieval.
-- [ ] Run metadata filtering, keyword search, vector search, hybrid fusion, and optional reranking.
-- [ ] Set minimum relevance thresholds and return “insufficient evidence” when they are not met.
-- [ ] Pass only approved, current chunks into Gemini with structured context boundaries.
-- [ ] Require source citations with document, version, page/section, URL, and retrieval timestamp.
-- [ ] Generate structured answers with assumptions, evidence, uncertainty, and next actions.
-- [ ] Prevent the model from treating uploaded content as instructions or secrets.
+- [~] Apply tenant and document permissions before retrieval (RLS and role filters prepared; live isolation tests pending).
+- [~] Run metadata filtering, keyword search, vector search, hybrid fusion, and optional reranking (hybrid RPC prepared; evaluation pending).
+- [~] Set minimum relevance thresholds and return “insufficient evidence” when they are not met (provisional threshold prepared; calibration pending).
+- [~] Pass only approved, current chunks into Gemini with structured context boundaries (prepared; ingestion and live verification pending).
+- [~] Require source citations with document, version, page/section, URL, and retrieval timestamp (citation validation prepared; persistence pending).
+- [~] Generate structured answers with assumptions, evidence, uncertainty, and next actions (Edge Function prepared; live verification pending).
+- [~] Prevent the model from treating uploaded content as instructions or secrets (prompt boundary prepared; adversarial evaluation pending).
 - [ ] Add prompt injection, data exfiltration, tool abuse, and cross-tenant leakage protections.
 - [ ] Add streaming, cancellation, token budgets, timeouts, retries, and user-visible failure states.
 - [ ] Keep Gemini keys in server-side Supabase Edge Function secrets; never expose them in the frontend.
@@ -148,7 +148,9 @@ Legend: `[x]` complete, `[~]` in progress or prepared, `[ ]` remaining.
 
 ## 10. Billing and commercial readiness
 
-- [ ] Choose billing provider and merchant-of-record approach.
+- [x] Select Dodo Payments as the intended billing provider; merchant setup and production terms remain pending.
+- [x] Show Pilot, Starter, Growth, and Enterprise as indicative packages with no active checkout; add an early-access billing status view.
+- [x] Display indicative USD monthly and annual packages on the public page and workspace Billing view; calculate annual totals at 20% below twelve monthly payments.
 - [ ] Define plans, entitlements, usage meters, taxes, invoices, refunds, cancellation, and failed-payment behavior.
 - [ ] Implement server-side checkout and webhook signature verification.
 - [ ] Enforce plan limits for seats, storage, pages, embeddings, retrievals, and model usage.
@@ -172,7 +174,7 @@ The UI, preview workspace, authentication screens, Supabase schema design, RAG/i
 ## Today: RAG kickoff agenda
 
 - [x] Confirm the first RAG pilot scope: generic electronics, target market, and approved source types.
-- [~] Inventory the six supplied requirement documents: roles and metadata defined; actual files are not present.
+- [x] Inventory the six supplied requirement documents: checksums, metadata, heading outlines, paragraph/table counts, and non-retrievable planning classification recorded in `docs/source-inventory.json` and `docs/source-inventory.md`.
 - [x] Design the document, version, chunk, embedding, ingestion job, source approval, and citation tables.
 - [x] Choose the first extraction and chunking rules for PDF, DOCX, tables, headings, and page citations.
 - [x] Prepare the Gemini embedding configuration as a server-side secret contract (value still required).

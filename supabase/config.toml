@@ -4,3 +4,6 @@ verify_jwt = false
 [functions.index-document]
 verify_jwt = false
 
+[functions.process-ingestion-jobs]
+verify_jwt = false
+

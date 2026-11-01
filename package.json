@@ -5,18 +5,28 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev:staging": "vite --mode staging --host 127.0.0.1",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0",
-    "test:rag": "node --test tests/rag-retrieval.test.mjs"
+    "build:staging": "vite build --mode staging",
+    "build:production": "vite build --mode production",
+    "preview": "npm run build && wrangler dev",
+    "test:rag": "node --test tests/rag-retrieval.test.mjs tests/rag-chunking.test.mjs tests/rag-evaluation.test.mjs",
+    "test:auth": "node --test tests/public-auth.test.mjs",
+    "test:rag:staging": "node --env-file=.env.rag-test.local tests/rag-staging-acceptance.mjs",
+    "test:smoke": "node scripts/smoke-staging.mjs",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@sentry/react": "11.10.0",
     "@supabase/supabase-js": "2.81.1",
     "lucide-react": "0.468.0",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.66.0",
     "@vitejs/plugin-react": "4.7.0",
-    "vite": "6.4.5"
+    "vite": "6.4.5",
+    "wrangler": "^4.155.0"
   }
 }

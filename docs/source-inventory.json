@@ -1,0 +1,452 @@
+{
+  "inventory_version": "1.0",
+  "generated_at": "2026-10-27T00:00:00+05:30",
+  "corpus_classification": "internal_planning",
+  "retrieval_policy": {
+    "default_eligible": false,
+    "approval_required": true,
+    "regulatory_authority": "none"
+  },
+  "documents": [
+    {
+      "document_id": "product-requirements",
+      "original_filename": "01_Copeit_AI_Product_Requirements_Document.docx",
+      "source_path": "C:\\Users\\Aditya singh\\Documents\\Codex\\2026-10-25\\referenced-chatgpt-conversation-this-is-an\\outputs\\Copeit_AI_Project_Documents\\01_Copeit_AI_Product_Requirements_Document.docx",
+      "document_role": "Product Requirements Document",
+      "exists": true,
+      "sha256": "abc7c073e34d7f19e704995ec8a7bc940133c5f2d86b88bdb3e49629f0baacb8",
+      "file_size_bytes": 43041,
+      "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "modified_at": "2026-10-26T18:43:39.847275+05:30",
+      "heading_count": 11,
+      "headings": [
+        {
+          "level": 2,
+          "text": "Document control"
+        },
+        {
+          "level": 1,
+          "text": "1 Product decision"
+        },
+        {
+          "level": 1,
+          "text": "2 Problem and users"
+        },
+        {
+          "level": 1,
+          "text": "3 Goals and measures"
+        },
+        {
+          "level": 1,
+          "text": "4 MVP scope"
+        },
+        {
+          "level": 2,
+          "text": "Included"
+        },
+        {
+          "level": 2,
+          "text": "Excluded"
+        },
+        {
+          "level": 1,
+          "text": "5 Functional requirements"
+        },
+        {
+          "level": 1,
+          "text": "6 Product rules and quality"
+        },
+        {
+          "level": 1,
+          "text": "7 Open decisions and risks"
+        },
+        {
+          "level": 1,
+          "text": "8 Regulatory responsibility and sources"
+        }
+      ],
+      "paragraph_count": 42,
+      "table_count": 5,
+      "section_break_count": 0,
+      "page_count": "not determinable from DOCX without rendering",
+      "language": "en",
+      "source_type": "internal_planning",
+      "approval_status": "pending",
+      "regulatory_authority": "none",
+      "eligible_for_retrieval": false,
+      "owner": null,
+      "reviewer": null,
+      "jurisdiction": null,
+      "effective_date": null,
+      "canonical_url": null,
+      "notes": [
+        "Planning baseline only; not regulatory evidence.",
+        "Full text intentionally excluded from repository inventory."
+      ]
+    },
+    {
+      "document_id": "technical-requirements",
+      "original_filename": "02_Copeit_AI_Technical_Requirements_Document.docx",
+      "source_path": "C:\\Users\\Aditya singh\\Documents\\Codex\\2026-10-25\\referenced-chatgpt-conversation-this-is-an\\outputs\\Copeit_AI_Project_Documents\\02_Copeit_AI_Technical_Requirements_Document.docx",
+      "document_role": "Technical Requirements Document",
+      "exists": true,
+      "sha256": "1462f6dfcd119661e1fa4bcf97a82bdb59c7e83b8bed611d53f95a91a85ad641",
+      "file_size_bytes": 43616,
+      "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "modified_at": "2026-10-26T18:43:40.179538+05:30",
+      "heading_count": 11,
+      "headings": [
+        {
+          "level": 2,
+          "text": "Document control"
+        },
+        {
+          "level": 1,
+          "text": "1 System boundary"
+        },
+        {
+          "level": 1,
+          "text": "2 Recommended architecture"
+        },
+        {
+          "level": 1,
+          "text": "3 Core flows"
+        },
+        {
+          "level": 2,
+          "text": "Sourced chat"
+        },
+        {
+          "level": 2,
+          "text": "Document ingestion"
+        },
+        {
+          "level": 1,
+          "text": "4 RAG, sources, rules, and model controls"
+        },
+        {
+          "level": 1,
+          "text": "5 API boundaries"
+        },
+        {
+          "level": 1,
+          "text": "6 Security, privacy, and service targets"
+        },
+        {
+          "level": 1,
+          "text": "7 Delivery and verification"
+        },
+        {
+          "level": 1,
+          "text": "8 Regulatory responsibility and sources"
+        }
+      ],
+      "paragraph_count": 42,
+      "table_count": 5,
+      "section_break_count": 0,
+      "page_count": "not determinable from DOCX without rendering",
+      "language": "en",
+      "source_type": "internal_planning",
+      "approval_status": "pending",
+      "regulatory_authority": "none",
+      "eligible_for_retrieval": false,
+      "owner": null,
+      "reviewer": null,
+      "jurisdiction": null,
+      "effective_date": null,
+      "canonical_url": null,
+      "notes": [
+        "Planning baseline only; not regulatory evidence.",
+        "Full text intentionally excluded from repository inventory."
+      ]
+    },
+    {
+      "document_id": "application-flow-user-journey",
+      "original_filename": "03_Copeit_AI_Application_Flow_and_User_Journey.docx",
+      "source_path": "C:\\Users\\Aditya singh\\Documents\\Codex\\2026-10-25\\referenced-chatgpt-conversation-this-is-an\\outputs\\Copeit_AI_Project_Documents\\03_Copeit_AI_Application_Flow_and_User_Journey.docx",
+      "document_role": "Application Flow and User Journey",
+      "exists": true,
+      "sha256": "e5b0a243484d520eca66883ca2eb8f8597e1e1dd6b2aa55ab406169f7f3ac808",
+      "file_size_bytes": 42853,
+      "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "modified_at": "2026-10-26T18:43:40.536382+05:30",
+      "heading_count": 7,
+      "headings": [
+        {
+          "level": 2,
+          "text": "Document control"
+        },
+        {
+          "level": 1,
+          "text": "1 Navigation model"
+        },
+        {
+          "level": 1,
+          "text": "2 Journey phases"
+        },
+        {
+          "level": 1,
+          "text": "3 Buttons and next screens"
+        },
+        {
+          "level": 1,
+          "text": "4 Chat and error states"
+        },
+        {
+          "level": 1,
+          "text": "5 Status model"
+        },
+        {
+          "level": 1,
+          "text": "6 Journey acceptance checks"
+        }
+      ],
+      "paragraph_count": 17,
+      "table_count": 6,
+      "section_break_count": 0,
+      "page_count": "not determinable from DOCX without rendering",
+      "language": "en",
+      "source_type": "internal_planning",
+      "approval_status": "pending",
+      "regulatory_authority": "none",
+      "eligible_for_retrieval": false,
+      "owner": null,
+      "reviewer": null,
+      "jurisdiction": null,
+      "effective_date": null,
+      "canonical_url": null,
+      "notes": [
+        "Planning baseline only; not regulatory evidence.",
+        "Full text intentionally excluded from repository inventory."
+      ]
+    },
+    {
+      "document_id": "ui-ux-specification",
+      "original_filename": "04_Copeit_AI_UI_UX_Specification.docx",
+      "source_path": "C:\\Users\\Aditya singh\\Documents\\Codex\\2026-10-25\\referenced-chatgpt-conversation-this-is-an\\outputs\\Copeit_AI_Project_Documents\\04_Copeit_AI_UI_UX_Specification.docx",
+      "document_role": "UI UX Specification",
+      "exists": true,
+      "sha256": "fcdb770e81ea2900f81f6a76161b254fe2d2374c972eb48310b80ae2d514fda3",
+      "file_size_bytes": 35870,
+      "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "modified_at": "2026-10-26T21:39:01.504985+05:30",
+      "heading_count": 16,
+      "headings": [
+        {
+          "level": 2,
+          "text": "Document control"
+        },
+        {
+          "level": 1,
+          "text": "1 Experience principles"
+        },
+        {
+          "level": 1,
+          "text": "2 Color palette"
+        },
+        {
+          "level": 1,
+          "text": "3 Typography and layout"
+        },
+        {
+          "level": 1,
+          "text": "4 Component behavior"
+        },
+        {
+          "level": 1,
+          "text": "5 Screen specifications"
+        },
+        {
+          "level": 2,
+          "text": "Sign-in"
+        },
+        {
+          "level": 2,
+          "text": "Workspace setup"
+        },
+        {
+          "level": 2,
+          "text": "Home and Ask Copeit"
+        },
+        {
+          "level": 2,
+          "text": "Product list and detail"
+        },
+        {
+          "level": 2,
+          "text": "Requirements"
+        },
+        {
+          "level": 2,
+          "text": "Evidence library"
+        },
+        {
+          "level": 2,
+          "text": "Suppliers"
+        },
+        {
+          "level": 2,
+          "text": "Compliance Passport"
+        },
+        {
+          "level": 2,
+          "text": "Audit trail and settings"
+        },
+        {
+          "level": 1,
+          "text": "6 Content, accessibility, and QA"
+        }
+      ],
+      "paragraph_count": 41,
+      "table_count": 4,
+      "section_break_count": 0,
+      "page_count": "not determinable from DOCX without rendering",
+      "language": "en",
+      "source_type": "internal_planning",
+      "approval_status": "pending",
+      "regulatory_authority": "none",
+      "eligible_for_retrieval": false,
+      "owner": null,
+      "reviewer": null,
+      "jurisdiction": null,
+      "effective_date": null,
+      "canonical_url": null,
+      "notes": [
+        "Planning baseline only; not regulatory evidence.",
+        "Full text intentionally excluded from repository inventory."
+      ]
+    },
+    {
+      "document_id": "backend-schema-authentication",
+      "original_filename": "05_Copeit_AI_Backend_Schema_and_Authentication.docx",
+      "source_path": "C:\\Users\\Aditya singh\\Documents\\Codex\\2026-10-25\\referenced-chatgpt-conversation-this-is-an\\outputs\\Copeit_AI_Project_Documents\\05_Copeit_AI_Backend_Schema_and_Authentication.docx",
+      "document_role": "Backend Schema and Authentication",
+      "exists": true,
+      "sha256": "d67749a7b0e070edff131ca8503c870ccd5e441a336140bb8f11d6a231697b4e",
+      "file_size_bytes": 43390,
+      "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "modified_at": "2026-10-26T18:43:41.138713+05:30",
+      "heading_count": 8,
+      "headings": [
+        {
+          "level": 2,
+          "text": "Document control"
+        },
+        {
+          "level": 1,
+          "text": "1 Data principles"
+        },
+        {
+          "level": 1,
+          "text": "2 Relationship overview"
+        },
+        {
+          "level": 1,
+          "text": "3 Tables and key fields"
+        },
+        {
+          "level": 1,
+          "text": "4 Tenant and role enforcement"
+        },
+        {
+          "level": 1,
+          "text": "5 Authentication lifecycle"
+        },
+        {
+          "level": 1,
+          "text": "6 Data lifecycle and privacy"
+        },
+        {
+          "level": 1,
+          "text": "7 Integrity and security checks"
+        }
+      ],
+      "paragraph_count": 35,
+      "table_count": 5,
+      "section_break_count": 0,
+      "page_count": "not determinable from DOCX without rendering",
+      "language": "en",
+      "source_type": "internal_planning",
+      "approval_status": "pending",
+      "regulatory_authority": "none",
+      "eligible_for_retrieval": false,
+      "owner": null,
+      "reviewer": null,
+      "jurisdiction": null,
+      "effective_date": null,
+      "canonical_url": null,
+      "notes": [
+        "Planning baseline only; not regulatory evidence.",
+        "Full text intentionally excluded from repository inventory."
+      ]
+    },
+    {
+      "document_id": "implementation-plan",
+      "original_filename": "06_Copeit_AI_Implementation_Plan.docx",
+      "source_path": "C:\\Users\\Aditya singh\\Documents\\Codex\\2026-10-25\\referenced-chatgpt-conversation-this-is-an\\outputs\\Copeit_AI_Project_Documents\\06_Copeit_AI_Implementation_Plan.docx",
+      "document_role": "Implementation Plan",
+      "exists": true,
+      "sha256": "98f7628a8cb8cc36d1209ab88b252a1d0e65ea62a2a3bbac02b81de256b20f03",
+      "file_size_bytes": 38582,
+      "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "modified_at": "2026-10-26T21:39:01.263914+05:30",
+      "heading_count": 9,
+      "headings": [
+        {
+          "level": 2,
+          "text": "Document control"
+        },
+        {
+          "level": 1,
+          "text": "1 Delivery rules"
+        },
+        {
+          "level": 1,
+          "text": "2 Step-by-step sequence"
+        },
+        {
+          "level": 1,
+          "text": "3 Team and ownership"
+        },
+        {
+          "level": 1,
+          "text": "4 Milestones and gates"
+        },
+        {
+          "level": 1,
+          "text": "5 Test and release sequence"
+        },
+        {
+          "level": 1,
+          "text": "6 Pilot measures"
+        },
+        {
+          "level": 1,
+          "text": "7 Risks and budget approach"
+        },
+        {
+          "level": 1,
+          "text": "8 Final release gate"
+        }
+      ],
+      "paragraph_count": 26,
+      "table_count": 6,
+      "section_break_count": 0,
+      "page_count": "not determinable from DOCX without rendering",
+      "language": "en",
+      "source_type": "internal_planning",
+      "approval_status": "pending",
+      "regulatory_authority": "none",
+      "eligible_for_retrieval": false,
+      "owner": null,
+      "reviewer": null,
+      "jurisdiction": null,
+      "effective_date": null,
+      "canonical_url": null,
+      "notes": [
+        "Planning baseline only; not regulatory evidence.",
+        "Full text intentionally excluded from repository inventory."
+      ]
+    }
+  ]
+}

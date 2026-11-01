@@ -1,0 +1,11 @@
+.preparation-journey{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.preparation-journey>button{position:relative;display:grid;justify-items:start;gap:12px;padding:28px 24px;text-align:left;border:1px solid #d9e6e6;border-radius:16px;background:linear-gradient(145deg,#fff,#f2f7f7);color:#224f69;transition:transform .18s,border-color .18s,box-shadow .18s}
+.preparation-journey>button:hover{transform:translateY(-3px);border-color:#92b7c4;box-shadow:0 12px 24px #244f6810}
+.journey-number{font:italic 28px Georgia,serif;color:#86a9b5}
+.preparation-journey strong{font-size:15px}.preparation-journey small{font-size:12px;line-height:1.7;color:#6e8794;max-width:230px}
+.journey-open{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;font-weight:700;color:#26768d}
+.setup-card .auth-tabs{margin:24px 0}.setup-card .auth-tabs button{padding:12px}
+.setup-card input{width:100%;box-sizing:border-box}.setup-card .button-primary{margin-top:14px}
+.workflow-page button:focus-visible,.setup-page button:focus-visible,.auth-page button:focus-visible{outline:3px solid #e8a16d;outline-offset:4px}
+@media(max-width:760px){.preparation-journey{grid-template-columns:1fr}.preparation-journey>button{padding:20px}}
+@media(prefers-reduced-motion:reduce){.preparation-journey>button{transition:none}.preparation-journey>button:hover{transform:none}}

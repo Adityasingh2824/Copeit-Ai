@@ -1,6 +1,6 @@
 # Copeit AI
 
-Copeit AI is a tenant-isolated workspace for preparing electronics products for market entry. It brings product records, requirements, evidence, tasks, audit history, and grounded AI guidance into one workflow for teams moving from an India-origin product definition toward EU readiness. It is workflow assistance, not a substitute for qualified regulatory or legal review.
+Copeit AI is a tenant-isolated workspace for exporters preparing products for new markets worldwide. It brings product records, requirements, evidence, tasks, audit history, and grounded AI guidance into one workflow. The v1 pilot is scoped around India-to-EU and EU-to-India electronics preparation; additional trade routes require their own reviewed sources and experts. It is workflow assistance, not a substitute for qualified regulatory or legal review.
 
 > **Project status:** active pilot foundation. The UI, authentication flow, tenant-aware schema, retrieval design, ingestion functions, and evaluation fixtures are in place. Production launch still requires live Supabase migration verification, approved source ownership, deployed secrets, end-to-end RAG evaluation, and operational/compliance sign-off.
 
@@ -10,9 +10,14 @@ Copeit AI is a tenant-isolated workspace for preparing electronics products for 
 - Supabase email authentication, password recovery, sessions, and protected workspace routes.
 - Tenant/workspace model with memberships, roles, products, immutable product versions, tasks, private chat, and append-only audit records.
 - Row-level security policies designed to prevent cross-tenant access.
-- Ask Copeit lookup mode with an optional Gemini Edge Function for grounded answers.
+- Ask Copeit offline mode with an opt-in Gemini Edge Function for grounded, cited answers.
 - RAG foundation for source documents, versions, chunks, embeddings, review states, citations, and ingestion quarantine.
 - Retrieval verification SQL, deterministic retrieval tests, and a starter golden set.
+- Global trade-route positioning, four indicative pricing packages, and an early-access billing view.
+
+## Pricing and billing status
+
+The site displays indicative USD packages: Pilot $299/month, Starter $499/month, Growth $1,999/month, and Enterprise from $4,999/month. A separate annual view shows $2,870.40, $4,790.40, $19,190.40, and from $47,990.40 per year respectively, exactly 20% below twelve displayed monthly payments. The annual Pilot is a proposed 12-month program rather than the original three-month pilot. These are planning figures, not live checkout prices or entitlements. The site explains the proposed scope and commercial terms without collecting payment. Dodo Payments is the selected future provider; subscriptions, invoices, customer portal, webhooks, and entitlement enforcement still need implementation and testing before paid access begins.
 
 ## Architecture
 
@@ -44,7 +49,7 @@ Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local`. A p
 
 ## Set up the database
 
-Apply [supabase/schema.sql](supabase/schema.sql) to a **new or staging** Supabase project using its SQL Editor. The SQL creates tenant, membership, product, immutable product version, task, private chat message, and append-only audit tables, with row-level security. It automatically creates the owner membership when a tenant is created. Do not run the full file twice: its policies are intended for a fresh project.
+The canonical schema is the versioned migration history in [supabase/migrations](supabase/migrations). It creates tenant and membership records, products, work items, source/version/review records, private embeddings, audit records, and secure workspace RPCs. Do not apply the older bootstrap scripts to the staging project: they are retained only as historical design references.
 
 In Supabase Auth settings, choose the email verification and redirect URL policy for the pilot. Add the local and eventual deployed URLs, including `http://localhost:5173/**`, `http://127.0.0.1:4174/**`, and the deployed origin, to the redirect allowlist. Confirm a custom SMTP sender before production email flows. Supabase currently requires email confirmation for this project.
 
@@ -54,7 +59,9 @@ The **Preview workspace** button on the home page opens `#/demo` without sign-in
 
 The optional [Gemini Edge Function](supabase/functions/ask-copeit/index.ts) is prepared for workspace and approved-source questions. Apply [supabase/rag_schema.sql](supabase/rag_schema.sql) after the base schema, populate only reviewed sources/chunks, and run [supabase/retrieval.verify.sql](supabase/retrieval.verify.sql) with controlled cross-tenant fixtures. The retrieval function uses caller-scoped RLS, role filters, current/approved-source filters, lexical/vector reciprocal-rank fusion, and a configurable minimum vector similarity. Answers use structured output, validate citations against retrieved chunk IDs, and abstain when evidence is missing or citations are invalid.
 
-For production, set `GEMINI_API_KEY` and `COPEIT_ALLOWED_ORIGINS` as **Supabase Edge Function secrets**. Optional server-only settings are `GEMINI_MODEL` (default `gemini-3.5-flash-lite`), `GEMINI_EMBEDDING_MODEL` (default `gemini-embedding-2`), `COPEIT_MIN_VECTOR_SIMILARITY` (default `0.62`), and `COPEIT_RETRIEVAL_LIMIT` (default `8`). Deploy with `supabase functions deploy ask-copeit`, test the live function with two tenants and multiple roles, then set `VITE_ASK_COPEIT_MODE=gemini` and rebuild. Keep every Gemini value out of `VITE_` variables. Until schema, secrets, retrieval evaluation, and live tenant-isolation tests pass, leave the mode at `lookup`.
+The browser now queues approved sources only; the private `process-ingestion-jobs` worker performs extraction, chunking, embeddings, and storage promotion. Official public-source candidates are metadata-only until independently approved. See [RAG_STAGING_RELEASE.md](docs/RAG_STAGING_RELEASE.md) and [RAG_PUBLIC_SOURCE_REGISTER.md](docs/RAG_PUBLIC_SOURCE_REGISTER.md) for the controlled rollout.
+
+For staging, set a newly rotated `GEMINI_API_KEY` and `COPEIT_ALLOWED_ORIGINS` as **Supabase Edge Function secrets**. Optional server-only settings are `GEMINI_MODEL` (default `gemini-3.5-flash-lite`), `GEMINI_EMBEDDING_MODEL` (default `gemini-embedding-2`), `COPEIT_MIN_VECTOR_SIMILARITY` (default `0.62`), and `COPEIT_RETRIEVAL_LIMIT` (default `8`). Test with two tenants and multiple roles, then set `VITE_ASK_COPEIT_MODE=gemini` and rebuild. Keep every Gemini value out of `VITE_` variables. Until acceptance tests pass, leave the mode at `offline`.
 
 ## Repository layout
 
@@ -88,11 +95,11 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-For live auth and workspace data, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `VITE_ASK_COPEIT_MODE=lookup` in `.env.local`. Never place a Supabase service-role key, Gemini key, or other secret in a `VITE_` variable. Local `.env` files are ignored by Git.
+For live staging auth and workspace data, set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `VITE_ASK_COPEIT_MODE=offline` in `.env.staging.local`. Never place a Supabase service-role key, Gemini key, or other secret in a `VITE_` variable. Local `.env` files are ignored by Git.
 
 ## Database and function deployment
 
-Apply the SQL scripts to a new or staging project in this order: `supabase/schema.sql`, `supabase/rag_schema.sql`, `supabase/retrieval.sql`, then `supabase/retrieval.verify.sql` in a controlled test environment. Convert these scripts into reviewed, versioned migrations before production.
+Run the versioned migrations only against the isolated staging project. The controlled, two-user acceptance flow is [tests/rag-staging-acceptance.mjs](tests/rag-staging-acceptance.mjs); it uses synthetic data and remains non-live until `RUN_GEMINI=true` is supplied after server-side secrets are configured.
 
 ```powershell
 supabase login
@@ -101,7 +108,7 @@ supabase functions deploy index-document
 supabase functions deploy ask-copeit
 ```
 
-Set `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_EMBEDDING_MODEL`, `COPEIT_ALLOWED_ORIGINS`, `COPEIT_MIN_VECTOR_SIMILARITY`, and `COPEIT_RETRIEVAL_LIMIT` as Edge Function secrets. Keep `VITE_ASK_COPEIT_MODE=lookup` until reviewed sources, citation validation, function deployment, and tenant-isolation tests pass; then switch the deployed frontend to `gemini`.
+Set `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_EMBEDDING_MODEL`, `COPEIT_ALLOWED_ORIGINS`, `COPEIT_MIN_VECTOR_SIMILARITY`, and `COPEIT_RETRIEVAL_LIMIT` as Edge Function secrets. Keep `VITE_ASK_COPEIT_MODE=offline` until reviewed sources, citation validation, function deployment, and tenant-isolation tests pass; then switch the deployed frontend to `gemini`.
 
 ## Security and data handling
 
@@ -130,7 +137,13 @@ Use short-lived branches and focused pull requests. Keep secrets out of commits,
 
 No open-source license has been selected yet; until the repository owner adds one, all rights are reserved. Before public launch, publish Terms of Service, Privacy Policy, acceptable-use rules, data-retention policy, and support contact details after legal review. Copeit AI provides workflow and research assistance only; users remain responsible for source licensing, product compliance, professional advice, and regulatory submissions.
 
+## Production foundation
+
+The repository includes isolated staging and production Cloudflare Worker configuration, GitHub Actions release workflows, browser-error monitoring that is disabled until a public Sentry DSN is configured, and provisional trust-page routes. Production AI and customer uploads remain disabled. Follow [Production foundation](docs/PRODUCTION_FOUNDATION.md) to configure GitHub environments, secrets, exact origins, monitoring, backups, release approval, and the remaining production gates.
+
 ## RAG pilot
 
 The kickoff design is in [docs/RAG_KICKOFF.md](docs/RAG_KICKOFF.md). The prepared schema is [supabase/rag_schema.sql](supabase/rag_schema.sql), and the first ingestion Edge Function is [supabase/functions/index-document/index.ts](supabase/functions/index-document/index.ts). It requires a private ag-quarantine bucket plus server-side GEMINI_API_KEY and GEMINI_EMBEDDING_MODEL=gemini-embedding-2 secrets. Uploaded versions remain unavailable to retrieval until reviewed and approved.
+
+The canonical frontend is deployed on Vercel at [copeit-ai.vercel.app](https://copeit-ai.vercel.app) with Deployment Protection enabled during the pilot. See [Vercel release operations](docs/VERCEL_RELEASE.md) for the promotion path.
 
