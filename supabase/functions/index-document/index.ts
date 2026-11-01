@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.81.1';
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 
 const MAX_BYTES = 1024 * 1024;
 const ALLOWED_TYPES = new Set(['text/plain', 'text/markdown', 'text/csv']);
@@ -29,6 +30,16 @@ async function sha256(value: string | ArrayBuffer) {
 
 async function requestData(request: Request) {
   return (request.headers.get('content-type') || '').includes('multipart/form-data') ? await request.formData() : await request.json();
+}
+
+function startWorker(url: string, publishable: string, tenantId: string, documentVersionId: string) {
+  const token = Deno.env.get('INGESTION_WORKER_TOKEN');
+  if (!token) return false;
+  EdgeRuntime.waitUntil(fetch(`${url}/functions/v1/process-ingestion-jobs`, {
+    method: 'POST', headers: { 'content-type': 'application/json', apikey: publishable, 'x-copeit-worker-token': token },
+    body: JSON.stringify({ tenantId, documentVersionId }),
+  }).then(response => { if (!response.ok) console.error('ingestion_worker_http_error', response.status); }).catch(() => console.error('ingestion_worker_unreachable')));
+  return true;
 }
 
 Deno.serve(async request => {
@@ -86,16 +97,18 @@ Deno.serve(async request => {
     if (!['owner','admin','lead','editor'].includes(membership.role)) return json({ error: 'Editor access required' }, 403, origin);
     const versionId = String(get('documentVersionId') || '');
     if (!/^[0-9a-f-]{36}$/i.test(versionId)) return json({ error: 'Invalid document version' }, 400, origin);
-    const { data: version } = await admin.from('document_versions').select('id,source_reviews!inner(status)').eq('id', versionId).eq('tenant_id', tenantId).eq('source_reviews.status', 'approved').maybeSingle();
+    const { data: version } = await admin.from('document_versions').select('id,sources!inner(source_type,retrieval_eligible),source_reviews!inner(status)').eq('id', versionId).eq('tenant_id', tenantId).eq('source_reviews.status', 'approved').eq('sources.source_type', 'official_guidance').eq('sources.retrieval_eligible', true).maybeSingle();
     if (!version) return json({ error: 'Approved source not found' }, 404, origin);
     const { data: existing } = await admin.from('ingestion_jobs').select('id,status,attempts').eq('tenant_id', tenantId).eq('document_version_id', versionId).maybeSingle();
     if (existing?.status === 'completed') return json({ job: existing, duplicate: true, status: 'completed' }, 200, origin);
-    if (existing?.status === 'queued' || existing?.status === 'retry_wait' || existing?.status === 'extracting' || existing?.status === 'chunking' || existing?.status === 'embedding') return json({ job: existing, duplicate: true, status: existing.status }, 202, origin);
+    if (existing?.status === 'queued' || existing?.status === 'retry_wait') { if (!startWorker(url, publishable, tenantId, versionId)) return json({ error: 'Worker is not configured' }, 503, origin); return json({ job: existing, duplicate: true, status: existing.status }, 202, origin); }
+    if (existing?.status === 'extracting' || existing?.status === 'chunking' || existing?.status === 'embedding') return json({ job: existing, duplicate: true, status: existing.status }, 202, origin);
     const { data: job, error: jobError } = existing
       ? await admin.from('ingestion_jobs').update({ status: 'queued', available_at: new Date().toISOString(), locked_at: null, locked_by: null, completed_at: null, error_code: null, error_detail: null }).eq('id', existing.id).select('id,status').single()
       : await admin.from('ingestion_jobs').insert({ tenant_id: tenantId, document_version_id: versionId, idempotency_key: `process:${versionId}`, status: 'queued', created_by: auth.user.id }).select('id,status').single();
     if (jobError || !job) return json({ error: 'Could not queue ingestion job' }, 500, origin);
     await admin.from('document_versions').update({ extraction_status: 'pending' }).eq('id', versionId).eq('tenant_id', tenantId);
+    if (!startWorker(url, publishable, tenantId, versionId)) return json({ error: 'Worker is not configured; source remains queued' }, 503, origin);
     return json({ jobId: job.id, documentVersionId: versionId, status: 'queued' }, 202, origin);
   }
 

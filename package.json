@@ -10,8 +10,9 @@
     "build:staging": "vite build --mode staging",
     "build:production": "vite build --mode production",
     "preview": "npm run build && wrangler dev",
-    "test:rag": "node --test tests/rag-retrieval.test.mjs tests/rag-chunking.test.mjs tests/rag-evaluation.test.mjs",
+    "test:rag": "node --test tests/rag-retrieval.test.mjs tests/rag-chunking.test.mjs tests/rag-evaluation.test.mjs tests/worker-chunking.test.mjs tests/question-routing.test.mjs",
     "test:auth": "node --test tests/public-auth.test.mjs",
+    "test:google": "node --test tests/google-picker.test.mjs",
     "test:rag:staging": "node --env-file=.env.rag-test.local tests/rag-staging-acceptance.mjs",
     "test:smoke": "node scripts/smoke-staging.mjs",
     "deploy": "npm run build && wrangler deploy"

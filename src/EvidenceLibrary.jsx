@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle2, Download, FileCheck2, LoaderCircle, ShieldCheck, UploadCloud, Users } from 'lucide-react';
 import { supabase } from './lib/supabase';
+import './evidence-form.css';
 
 function latestVersion(source) {
   return [...(source.document_versions || [])].sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0];
@@ -13,7 +14,7 @@ function latestReview(version) {
 export default function EvidenceLibrary({ demo, tenant, user, sources, onBack, onRefresh, onManageTeam }) {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
-  const [sourceType, setSourceType] = useState('synthetic');
+  const [sourceType, setSourceType] = useState('official_guidance');
   const [publisherName, setPublisherName] = useState('');
   const [canonicalUrl, setCanonicalUrl] = useState('');
   const [sourcePublishedAt, setSourcePublishedAt] = useState('');
@@ -21,6 +22,16 @@ export default function EvidenceLibrary({ demo, tenant, user, sources, onBack, o
   const [busy, setBusy] = useState('');
   const [reviewing, setReviewing] = useState(null);
   const [rationale, setRationale] = useState('');
+  const [fileInputKey, setFileInputKey] = useState(0);
+
+  function useCeExample() {
+    setSourceType('official_guidance');
+    setTitle('European Commission — CE marking');
+    setPublisherName('European Commission');
+    setCanonicalUrl('https://single-market-economy.ec.europa.eu/single-market/goods/ce-marking_en');
+    setSourcePublishedAt('');
+    setNotice('Example details added. Choose the CE marking excerpt file below, then upload it for review.');
+  }
 
   async function call(action, body) {
     const { data, error } = await supabase.functions.invoke('index-document', { body });
@@ -47,7 +58,7 @@ export default function EvidenceLibrary({ demo, tenant, user, sources, onBack, o
       form.set('sourceType', sourceType); form.set('versionLabel', 'v1'); form.set('jurisdiction', 'global'); form.set('language', 'en'); form.set('publisherName', publisherName.trim()); form.set('canonicalUrl', canonicalUrl.trim()); form.set('sourcePublishedAt', sourcePublishedAt); form.set('file', file);
       const result = await call('upload', form);
       setNotice(result.duplicate ? 'This exact source is already recorded.' : 'Source uploaded to quarantine and is awaiting independent review.');
-      setFile(null); setTitle(''); setPublisherName(''); setCanonicalUrl(''); setSourcePublishedAt(''); await onRefresh();
+      setFile(null); setFileInputKey(value => value + 1); setTitle(''); setPublisherName(''); setCanonicalUrl(''); setSourcePublishedAt(''); await onRefresh();
     } catch (error) { setNotice(error.message || 'Upload failed.'); } finally { setBusy(''); }
   }
 
@@ -77,17 +88,18 @@ export default function EvidenceLibrary({ demo, tenant, user, sources, onBack, o
     <main className="billing-workspace-main">
       <span className="app-eyebrow">PRIVATE SOURCE LIBRARY <span>✳</span></span>
       <h1>Evidence with<br/><em>clear custody.</em></h1>
-      <p className="billing-workspace-lede">Staging accepts synthetic or official public UTF-8 TXT, Markdown, and CSV files only. Every file is quarantined, independently reviewed, and processed only after approval.</p>
+      <p className="billing-workspace-lede">Add an official public source with its publisher and original link. The file is held for independent review before it can be processed. TXT, Markdown and CSV only; PDFs are not supported yet.</p>
       {!demo && <section className="reviewer-guide" aria-label="Independent review required"><Users size={22}/><div><strong>Need an independent reviewer?</strong><p>Invite a second verified account before approving a source. The reviewer receives a one-time code to join this workspace.</p></div><button onClick={onManageTeam}>Invite reviewer</button></section>}
       {notice && <div className="form-message success" role="status">{notice}</div>}
       <section className="surface-card">
-        <div className="surface-head"><div><span>ADD A SOURCE</span><h2>Quarantine first.</h2></div><ShieldCheck size={24}/></div>
-        <form onSubmit={upload} className="evidence-upload-form">
-          <label>Source title<input required maxLength="300" value={title} onChange={event => setTitle(event.target.value)} placeholder="e.g. Synthetic pilot source"/></label>
-          <label>Source class<select value={sourceType} onChange={event => setSourceType(event.target.value)}><option value="synthetic">Synthetic test source</option><option value="official_guidance">Official public guidance</option></select></label>
-          {sourceType === 'official_guidance' && <><label>Official publisher<input required maxLength="240" value={publisherName} onChange={event => setPublisherName(event.target.value)} placeholder="e.g. European Commission"/></label><label>Canonical HTTPS URL<input required type="url" value={canonicalUrl} onChange={event => setCanonicalUrl(event.target.value)} placeholder="https://…"/></label><label>Published or effective date <small>(optional)</small><input type="date" value={sourcePublishedAt} onChange={event => setSourcePublishedAt(event.target.value)}/></label></>}
-          <label>UTF-8 source file<input required type="file" accept="text/plain,text/markdown,text/csv,.txt,.md,.csv" onChange={event => setFile(event.target.files?.[0] || null)}/></label>
-          <button className="button-primary" disabled={busy === 'upload'}><UploadCloud size={17}/>{busy === 'upload' ? 'Uploading…' : 'Upload to quarantine'}</button>
+        <div className="surface-head"><div><span>ADD A SOURCE</span><h2>Add the source details.</h2></div><ShieldCheck size={24}/></div>
+        <div className="evidence-form-intro"><p>Tell your reviewer where this source came from, then attach the text file.</p><button type="button" onClick={useCeExample}>Use CE marking example</button></div>
+        <form onSubmit={upload} className="evidence-upload-form source-details-form">
+          <label>Source title <small>Required</small><input required maxLength="300" value={title} onChange={event => setTitle(event.target.value)} placeholder="e.g. European Commission — CE marking"/></label>
+          <label>Source class <small>Required</small><select value={sourceType} onChange={event => setSourceType(event.target.value)}><option value="official_guidance">Official public guidance</option><option value="synthetic">Synthetic test source</option></select></label>
+          {sourceType === 'official_guidance' && <><label>Official publisher <small>Required</small><input required maxLength="240" value={publisherName} onChange={event => setPublisherName(event.target.value)} placeholder="e.g. European Commission"/></label><label>Original source URL <small>Required · HTTPS</small><input required type="url" pattern="https://.*" title="Enter an HTTPS link to the official source" value={canonicalUrl} onChange={event => setCanonicalUrl(event.target.value)} placeholder="https://…"/></label><label>Published or effective date <small>Optional</small><input type="date" value={sourcePublishedAt} onChange={event => setSourcePublishedAt(event.target.value)}/></label></>}
+          <label>Source file <small>Required · TXT, Markdown or CSV</small><input key={fileInputKey} required type="file" accept="text/plain,text/markdown,text/csv,.txt,.md,.csv" onChange={event => setFile(event.target.files?.[0] || null)}/></label>
+          <div className="source-upload-action"><p>Next: an independent reviewer checks the source and its reuse terms.</p><button className="button-primary" disabled={busy === 'upload'}><UploadCloud size={17}/>{busy === 'upload' ? 'Uploading…' : 'Upload for review'}</button></div>
         </form>
       </section>
       <section className="list-surface evidence-list" aria-live="polite">

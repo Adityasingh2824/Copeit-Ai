@@ -2,6 +2,22 @@
 
 Status: NOT RELEASED. Production Ask Cope must remain offline.
 
+## Current verification — 1 November 2026
+
+- One short CE-marking excerpt is admitted to the shared corpus. The independent reviewer confirmed its wording and reuse with attribution; the publication date is unknown and 1 November 2026 is the retrieval date.
+- In the local frontend connected to production, a CE question returned a cited Gemini answer and an unsupported power-bank certification question returned insufficient evidence. This is a limited smoke test, not a qualified evaluation.
+- The `Test 1` tenant's server-side pilot flag is enabled. The public Vercel frontend remains offline; two-tenant HTTP/API acceptance and release gates below remain outstanding.
+- Local changes add a product-facts-needed response and workspace lookup routing. These changes are not yet deployed or live-tested.
+
+## Historical verification snapshot
+
+- Production `Test 1` has a verified owner and independent reviewer. Gmail SMTP is enabled; a real reviewer confirmation and invitation acceptance occurred.
+- At the time of this snapshot, the CE marking excerpt's licence note and publication date still needed correction. The current verification above supersedes this point.
+- The official source completed ingestion with one `gemini-embedding-2` vector. A direct SQL retrieval with that stored vector returned the source for its tenant and zero for a different tenant identifier. This was not a full model-generated answer test.
+- A rollback-only RLS transaction created a temporary second identity, workspace and synthetic source. Each owner could see its own source and neither could see the other workspace's source; all fixtures were rolled back. This is not a full live HTTP/API isolation or concurrency test.
+- Privileged retrieval and embedding tables remain unavailable to authenticated browser roles. Synthetic evidence is excluded from official retrieval. Full citation accuracy, freshness/revocation, scheduled retry, and real two-account end-to-end tests remain unverified; the limited Gemini smoke tests are recorded above.
+- Security advisor still reports leaked-password protection disabled and six authenticated SECURITY DEFINER functions requiring review. See https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection and https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable.
+
 ## Implementation record — 1 November 2026
 
 - Staging applied: durable queue, tenant feature flags, controlled owner provisioning, source provenance, product context, and ready-only retrieval gate.

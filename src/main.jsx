@@ -9,6 +9,8 @@ import { configured, supabase } from './lib/supabase';
 import AuthPage from './AuthPage';
 import AskCopeit from './AskCopeit';
 import EvidenceLibrary from './EvidenceLibrary';
+import EvidenceDiscovery, { DiscoveryHome } from './EvidenceDiscovery';
+import GoogleEvidenceDiscovery from './GoogleEvidenceDiscovery';
 import WorkspaceOnboarding from './WorkspaceOnboarding';
 import TeamAccess from './TeamAccess';
 import ProfileMenu from './ProfileMenu';
@@ -19,6 +21,7 @@ import './styles.css';
 import './hero-hyperspeed.css';
 import './home-redesign.css';
 import './global-launch.css';
+import './workflow-motion.css';
 
 const mark = '/copeit-mark.png';
 const NAV = [{ label: 'Platform', href: '#platform' }, { label: 'Trade routes', href: '#routes' }, { label: 'How it works', href: '#workflow' }, { label: 'Pricing', href: '#pricing' }];
@@ -63,6 +66,7 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     if (params.has('recovery')) return 'auth';
     if (params.has('confirmed')) return 'workspace';
+    if (window.location.hash === '#/demo/discovery') return 'discovery';
     if (window.location.hash === '#/demo') return 'demo';
     if (window.location.hash === '#/login') return 'auth';
     if (window.location.hash === '#/workspace') return 'workspace';
@@ -119,19 +123,20 @@ function App() {
   }, [view]);
   const navigate = next => {
     if (new URLSearchParams(window.location.search).has('recovery')) window.history.replaceState({}, '', window.location.pathname + window.location.hash);
-    window.location.hash = next === 'demo' ? '#/demo' : next === 'auth' ? '#/login' : next === 'workspace' ? '#/workspace' : '#top';
+    window.location.hash = next === 'discovery' ? '#/demo/discovery' : next === 'demo' ? '#/demo' : next === 'auth' ? '#/login' : next === 'workspace' ? '#/workspace' : '#top';
     setView(next);
   };
   if (loading && view === 'workspace') return <div className="boot"><Logo /> <span>Preparing your workspace…</span></div>;
   if (view === 'workspace' && session) return <Workspace session={session} onExit={() => supabase.auth.signOut()} onPreview={() => navigate('demo')} onHome={() => navigate('landing')} />;
   if (view === 'workspace') return <AuthPage onBack={() => navigate('landing')} onPreview={() => navigate('demo')} Logo={Logo} mark={mark} />;
+  if (view === 'discovery') return <Workspace demo initialSection="Evidence Discovery" onExit={() => navigate('landing')} onSignIn={() => navigate(session ? 'workspace' : 'auth')} onHome={() => navigate('landing')} />;
   if (view === 'demo') return <Workspace demo onExit={() => navigate('landing')} onSignIn={() => navigate(session ? 'workspace' : 'auth')} onHome={() => navigate('landing')} />;
   if (view === 'auth') return <AuthPage onBack={() => navigate('landing')} onPreview={() => navigate('demo')} Logo={Logo} mark={mark} />;
   if (view.startsWith('trust:')) return <TrustPage pageKey={view.slice('trust:'.length)} onBack={() => navigate('landing')} Logo={Logo}/>;
-  return <Landing session={session} onStart={() => navigate('auth')} onPreview={() => navigate('demo')} onWorkspace={() => navigate('workspace')} onSignOut={() => supabase?.auth.signOut()} />;
+  return <Landing onDiscovery={() => navigate('discovery')} session={session} onStart={() => navigate('auth')} onPreview={() => navigate('demo')} onWorkspace={() => navigate('workspace')} onSignOut={() => supabase?.auth.signOut()} />;
 }
 
-function Landing({ session, onStart, onPreview, onWorkspace, onSignOut }) {
+function Landing({ session, onStart, onPreview, onWorkspace, onSignOut, onDiscovery }) {
   const hero = useRef(null);
   const [mobileNav, setMobileNav] = useState(false);
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -178,6 +183,7 @@ function Landing({ session, onStart, onPreview, onWorkspace, onSignOut }) {
       </section>
       <section className="metric-strip"><span>FROM YOUR FIRST ROUTE TO WHAT COMES NEXT</span><div><span><strong>01</strong> Product context</span><span><strong>02</strong> Evidence trail</span><span><strong>03</strong> Human review</span></div></section>
       <section className="intro section-pad" id="platform"><div className="section-kicker"><span className="round-star">✳</span> THE PLATFORM</div><div className="intro-grid"><h2>From scattered files<br/>to a <em>shared picture.</em></h2><div className="intro-side"><p>Expansion gets complicated fast. Product versions change. Supplier files expire. Requirements need context. Copeit brings the moving parts into one workspace, with people responsible for the final decisions.</p><a href="#workflow" className="under-link">Explore the workflow <ArrowUpRight size={18}/></a></div></div><div className="feature-grid"><Feature number="01" icon={<Layers3/>} title="One connected view" text="Start with a product profile, keep versions together, and turn questions into tasks."/><Feature number="02" icon={<FileCheck2/>} title="Evidence you can trace" text="A planned review flow will connect each file to its version, owner, and decision."/><Feature number="03" icon={<ShieldCheck/>} title="Confidence with context" text="Spot gaps early and bring the right person into a decision before a claim is made."/></div></section>
+      <DiscoveryHome onExplore={onDiscovery}/>
       <section className="routes section-pad" id="routes"><div className="routes-heading"><div><div className="section-kicker"><span className="round-star">✳</span> A GLOBAL HORIZON</div><h2>Wherever you build.<br/><em>Wherever you go.</em></h2></div><p>Copeit is being designed for exporters around the world. We are starting with two directions between India and the EU, then extending the same source-led workflow to more markets as each route is reviewed.</p></div><div className="route-grid"><article className="route-card"><div className="route-card-top"><span>V1 PILOT DIRECTION</span><Globe2 size={22}/></div><div className="route-pair"><span>India</span><ArrowRight size={27}/><span>European Union</span></div><p>Prepare an India-origin electronics product for an EU market with product context, tasks, and a future reviewed source catalog.</p><span className="route-status"><i/> Pilot scope being validated</span></article><article className="route-card"><div className="route-card-top"><span>V1 PILOT DIRECTION</span><Globe2 size={22}/></div><div className="route-pair"><span>European Union</span><ArrowRight size={27}/><span>India</span></div><p>Bring the same structured preparation workflow to EU-origin products entering India, subject to Indian source and expert review.</p><span className="route-status"><i/> Pilot scope being validated</span></article></div><div className="routes-next"><div><span>THE ROAD AHEAD</span><strong>More origins. More destinations. One clearer way to work.</strong></div><p>Additional corridors will be introduced only after their sources, reviewers, and requirements are ready. As the platform grows, new source-reviewed routes can be added without losing the product context you started with.</p><button onClick={onStart}>Join the pilot <ArrowUpRight size={17}/></button></div></section>
       <section className="showcase section-pad" id="workflow"><div className="showcase-head"><div><div className="section-kicker light"><span className="round-star">✳</span> THE WORKSPACE</div><h2>All the details.<br/><em>Finally in sync.</em></h2></div><p>A calm command center for the work behind every launch. Create a product profile, see open actions, and keep decisions connected to the right version.</p></div><div className="dashboard-demo"><div className="demo-sidebar"><Logo small/><div className="demo-nav"><span className="selected">◫ &nbsp; Overview</span><span>▤ &nbsp; Products</span><span>◈ &nbsp; Requirements</span><span>▣ &nbsp; Evidence</span><span>◌ &nbsp; Suppliers</span></div><div className="demo-sidebar-bottom">✳ &nbsp; Pilot workspace</div></div><div className="demo-content"><div className="demo-top"><span>Overview <span className="demo-crumb">/ Launch dashboard</span></span><span className="demo-avatar">AS</span></div><div className="demo-welcome"><div><span className="demo-kicker">YOUR WORKSPACE</span><h3>A clearer view, together <span>✳</span></h3><p>See the next action for your market preparation.</p></div><span className="demo-button">+ Add product</span></div><div className="demo-cards"><div className="demo-card"><span>PRODUCT PROFILE</span><strong>Start with context</strong><p>Record the model and intended use before mapping a route.</p><div className="demo-mini blue">INDIA <ArrowRight size={13}/> EUROPEAN UNION</div></div><div className="demo-card"><span>SOURCE REVIEW</span><strong>Know what supports a claim</strong><p>Reviewed sources and evidence handling are part of the pilot roadmap.</p><div className="demo-bars"><i/><i/><i/></div></div><div className="demo-card attention"><span>NEXT ACTION</span><strong>Make gaps actionable</strong><p>Track the questions and tasks that need a human answer.</p><div className="demo-mini orange">Open tasks <ArrowUpRight size={13}/></div></div></div><div className="demo-list"><div><span className="mini-symbol">✓</span><span>Product context in one place</span><small>WORKSPACE</small></div><div><span className="mini-symbol">↗</span><span>Human review before a conclusion</span><small>PLANNED</small></div></div></div></div><div className="showcase-foot"><span>AN ILLUSTRATIVE WORKSPACE VIEW</span><span>REGULATORY CONCLUSIONS REQUIRE EXPERT REVIEW</span></div></section>
       <section className="steps section-pad"><div className="section-kicker"><span className="round-star">✳</span> HOW IT WORKS</div><div className="steps-heading"><h2>A better way to<br/><em>move forward.</em></h2><p>From your first product profile to a review-ready evidence story, each step makes the next one easier.</p></div><div className="steps-list"><Step n="01" title="Set your course" text="Create a workspace, add a product and version, and define the market you’re exploring." icon={<Globe2/>}/><Step n="02" title="Bring the evidence together" text="Organize product and supplier records with the context your team needs." icon={<FileText/>}/><Step n="03" title="See what needs attention" text="Turn missing information and review questions into clear, owned next steps." icon={<Search/>}/><Step n="04" title="Review with confidence" text="Keep human decisions and their exact scope connected to the source material." icon={<Fingerprint/>}/></div></section>
@@ -208,17 +214,25 @@ function Landing({ session, onStart, onPreview, onWorkspace, onSignOut }) {
   </div>;
 }
 
-function Feature({ number, icon, title, text }) { return <article className="feature"><div className="feature-top"><span>{number} / 03</span><span>{icon}</span></div><div><h3>{title}</h3><p>{text}</p></div><ArrowUpRight size={20} className="feature-arrow"/></article>; }
+function Feature({ number, icon, title, text }) {
+  const stories = {
+    '01': { label: 'PRODUCT CONTEXT', icon: '◫', title: 'Power bank', subtitle: 'India → European Union', lines: ['Model · PB-200', 'Battery · Lithium-ion', 'Use · Portable charging'], badge: 'PROFILE CREATED' },
+    '02': { label: 'SOURCE REVIEW', icon: '▤', title: 'Official source', subtitle: 'Version & origin recorded', lines: ['01  Added to register', '02  Independent review', '03  Decision recorded'], badge: 'REVIEWED' },
+    '03': { label: 'NEXT ACTION', icon: '✳', title: 'Review open questions', subtitle: 'Give your team a clear next step', lines: ['Product details', 'Evidence to check', 'Human review'], badge: 'READY FOR REVIEW' },
+  };
+  const story = stories[number];
+  return <article className={`feature feature-story feature-story-${number}`}><div className="feature-top"><span>{number} / 03</span><span>{icon}</span></div><div className="story-stage" aria-label={`${story.label}: ${story.title}. ${story.lines.join(', ')}.`}><div className="story-grid"/><div className="story-orbit story-orbit-one"/><div className="story-orbit story-orbit-two"/><div className="story-window"><div className="story-window-top"><span><i/><i/><i/></span><b>{story.label}</b><span>•••</span></div><div className="story-window-body"><div className="story-symbol">{story.icon}</div><div className="story-window-title"><strong>{story.title}</strong><small>{story.subtitle}</small></div><div className="story-lines">{story.lines.map((line, i) => <div key={line} style={{'--story-index': i}}><span>{line}</span><i>✓</i></div>)}</div></div><div className="story-window-footer"><span><i/> {story.badge}</span><b>↗</b></div></div><div className="story-float story-float-a">✳</div><div className="story-float story-float-b">✓</div><div className="story-timeline"><span>ILLUSTRATIVE WORKFLOW</span><div><i/></div><span>0{number.slice(-1)}</span></div></div><div className="story-copy"><h3>{title}</h3><p>{text}</p></div><ArrowUpRight size={20} className="feature-arrow"/></article>;
+}
 function Step({ n, title, text, icon }) { return <div className="step"><span>{n}</span><div className="step-icon">{icon}</div><div><h3>{title}</h3><p>{text}</p></div><ArrowUpRight size={22}/></div>; }
 
-function Workspace({ session, demo = false, onExit, onPreview, onSignIn, onHome }) {
+function Workspace({ session, demo = false, initialSection = 'Readiness', onExit, onPreview, onSignIn, onHome }) {
   const user = demo ? { id: 'preview-user', email: 'preview@copeit.local' } : session.user;
   const [tenant, setTenant] = useState(demo ? DEMO_TENANT : null);
   const [products, setProducts] = useState(demo ? readPreview('copeit-preview-products', DEMO_PRODUCTS) : []);
   const [tasks, setTasks] = useState(demo ? readPreview('copeit-preview-tasks', DEMO_TASKS) : []);
   const [profiles, setProfiles] = useState(demo ? readPreview('copeit-preview-product-profiles', DEMO_PROFILES) : {});
   const [sources, setSources] = useState([]);
-  const [section, setSection] = useState('Readiness');
+  const [section, setSection] = useState(initialSection);
   const [activeProductId, setActiveProductId] = useState(null);
   const [busy, setBusy] = useState(!demo);
   const [error, setError] = useState('');
@@ -283,7 +297,7 @@ function Workspace({ session, demo = false, onExit, onPreview, onSignIn, onHome 
       setProducts(next); setForm(''); setNewName(''); setNewModel(''); setNewUse(''); setWorking(false);
       return;
     }
-    const { data, error: e } = await supabase.from('products').insert({ tenant_id: tenant.id, name: newName.trim(), model: newModel.trim(), intended_use: newUse.trim(), category: 'Unscoped electronics' }).select('id').single();
+    const { data, error: e } = await supabase.from('products').insert({ tenant_id: tenant.id, created_by: user.id, name: newName.trim(), model: newModel.trim(), intended_use: newUse.trim(), category: 'Unscoped electronics' }).select('id').single();
     if (e) setError(e.message);
     else {
       setForm(''); setNewName(''); setNewModel(''); setNewUse(''); await refresh();
@@ -323,7 +337,7 @@ function Workspace({ session, demo = false, onExit, onPreview, onSignIn, onHome 
     if (e) setError(e.message); else setProfiles(previous => ({ ...previous, [productId]: data }));
     setWorking(false);
   }
-  const nav = [{ name: 'Readiness', icon: <Layers3 size={18}/> }, { name: 'Products', icon: <FileText size={18}/> }, { name: 'Requirements', icon: <Globe2 size={18}/> }, { name: 'Evidence', icon: <FileCheck2 size={18}/> }, { name: 'Decision', icon: <ShieldCheck size={18}/> }, { name: 'Ask Cope', icon: <Sparkles size={18}/> }, { name: 'Tasks', icon: <CheckCircle2 size={18}/> }, { name: 'Billing', icon: <CircleHelp size={18}/> }, { name: 'Settings', icon: <ShieldCheck size={18}/> }];
+  const nav = [{ name: 'Readiness', icon: <Layers3 size={18}/> }, { name: 'Products', icon: <FileText size={18}/> }, { name: 'Requirements', icon: <Globe2 size={18}/> }, { name: 'Evidence', icon: <FileCheck2 size={18}/> }, { name: 'Evidence Discovery', icon: <Search size={18}/> }, { name: 'Decision', icon: <ShieldCheck size={18}/> }, { name: 'Ask Cope', icon: <Sparkles size={18}/> }, { name: 'Tasks', icon: <CheckCircle2 size={18}/> }, { name: 'Billing', icon: <CircleHelp size={18}/> }, { name: 'Settings', icon: <ShieldCheck size={18}/> }];
   if (section === 'Billing' && tenant && !busy && !backendUnavailable) return <div className="billing-workspace">
     <header className="billing-workspace-header"><button className="brand-home" onClick={onHome} aria-label="Go to Copeit AI home"><Logo small/></button><button onClick={() => setSection('Readiness')}><ArrowRight size={17}/> Back to workspace</button></header>
     <main className="billing-workspace-main">
@@ -345,6 +359,7 @@ function Workspace({ session, demo = false, onExit, onPreview, onSignIn, onHome 
   if (section === 'Settings') return <TeamAccess tenant={tenant} onBack={() => setSection('Readiness')} onJoined={joinedTenant => { setTenant(joinedTenant); setSection('Readiness'); refresh(joinedTenant); }}/>;
   const navigateWorkflow = next => { setSection(next); setMobileNav(false); };
   const workflowLayoutProps = { error, section, nav, tenant, user, demo, mobileNav, onToggleNav: () => setMobileNav(value => !value), onNavigate: navigateWorkflow, onHome, onExit, onSignIn };
+  if (section === 'Evidence Discovery') return <WorkflowLayout {...workflowLayoutProps}>{demo ? <EvidenceDiscovery onNavigate={navigateWorkflow}/> : <GoogleEvidenceDiscovery onNavigate={navigateWorkflow}/>}</WorkflowLayout>;
   if (section === 'Readiness') return <WorkflowLayout {...workflowLayoutProps}><ReadinessDashboard products={products} profiles={profiles} sources={sources} tasks={tasks} onNavigate={navigateWorkflow} onAddProduct={() => navigateWorkflow('Products')}/></WorkflowLayout>;
   if (section === 'Requirements') return <WorkflowLayout {...workflowLayoutProps}><RequirementsWorkspace products={products} profiles={profiles} activeProductId={activeProductId} onSelectProduct={setActiveProductId} onSave={saveProductContext} saving={working}/></WorkflowLayout>;
   if (section === 'Decision') return <WorkflowLayout {...workflowLayoutProps}><DecisionWorkspace products={products} profiles={profiles} sources={sources} tasks={tasks} onNavigate={navigateWorkflow}/></WorkflowLayout>;

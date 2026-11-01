@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.81.1';
+import { chunkApprovedText } from './worker-chunking.js';
 
 const DIMENSIONS = 768;
 const MAX_BATCH = 3;
@@ -21,22 +22,6 @@ function equal(left: string, right: string) {
   let mismatch = 0;
   for (let i = 0; i < left.length; i += 1) mismatch |= left.charCodeAt(i) ^ right.charCodeAt(i);
   return mismatch === 0;
-}
-
-function chunkText(text: string) {
-  const blocks = text.replace(/\r\n?/g, '\n').trim().split(/\n{2,}/).map(value => value.trim()).filter(Boolean);
-  const output: { content: string; headingPath: string[] }[] = [];
-  let headingPath: string[] = [];
-  let current = '';
-  const flush = () => { if (current.trim()) output.push({ content: current.trim(), headingPath }); current = ''; };
-  for (const block of blocks) {
-    const heading = /^(#{1,6})\s+(.{1,240})$/.exec(block);
-    if (heading) { flush(); headingPath = [heading[2].trim()]; continue; }
-    if (current && current.length + block.length + 2 > 2800) flush();
-    current += `${current ? '\n\n' : ''}${block}`;
-  }
-  flush();
-  return output;
 }
 
 async function sha256(value: string) {
@@ -82,7 +67,7 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any, apiK
   if (fileError || !file || file.size > MAX_TEXT_BYTES) throw new Error('approved_source_unavailable');
   let text: string;
   try { text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer()).trim(); } catch { throw new Error('source_not_utf8'); }
-  const parts = chunkText(text);
+  const parts = chunkApprovedText(text);
   if (!parts.length) throw new Error('no_extractable_text');
 
   await admin.from('ingestion_jobs').update({ status: 'embedding', chunks_total: parts.length, chunks_embedded: 0, last_heartbeat_at: new Date().toISOString() }).eq('id', job.id);
@@ -120,13 +105,13 @@ Deno.serve(async request => {
   const secret = keyset('SUPABASE_SECRET_KEYS', 'SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SECRET_KEY');
   const apiKey = Deno.env.get('GEMINI_API_KEY');
   if (!url || !secret || !apiKey) return result({ error: 'Worker is not configured' }, 503);
-  const input = await request.json().catch(() => ({})) as { limit?: number };
-  const limit = Math.min(MAX_BATCH, Math.max(1, Number(input.limit || 1)));
+  const input = await request.json().catch(() => ({})) as { tenantId?: string; documentVersionId?: string };
+  if (!input.tenantId || !input.documentVersionId || !/^[0-9a-f-]{36}$/i.test(input.tenantId) || !/^[0-9a-f-]{36}$/i.test(input.documentVersionId)) return result({ error: 'A specific workspace and document version are required' }, 400);
   const admin = createClient(url, secret, { auth: { persistSession: false } });
   const workerId = crypto.randomUUID();
   const outcomes: { jobId: string; status: string }[] = [];
-  for (let count = 0; count < limit; count += 1) {
-    const { data: job, error } = await admin.rpc('claim_next_ingestion_job', { p_worker_id: workerId });
+  for (let count = 0; count < 1; count += 1) {
+    const { data: job, error } = await admin.rpc('claim_official_ingestion_job', { p_worker_id: workerId, p_tenant_id: input.tenantId, p_document_version_id: input.documentVersionId });
     if (error) return result({ error: 'Unable to claim an ingestion job' }, 503);
     if (!job) break;
     try { await processJob(admin, job, apiKey, Deno.env.get('GEMINI_EMBEDDING_MODEL') || 'gemini-embedding-2'); outcomes.push({ jobId: job.id, status: 'completed' }); }
