@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.81.1';
-import { needsProductSelection } from './question-routing.js';
+import { buildRetrievalQuery, needsProductSelection } from './question-routing.js';
+import { isRegulatoryQuestion, researchWeb } from './web-search.js';
 
 const deployedStagingOrigin = 'https://copeit-ai-staging.copeit-ai.workers.dev';
 const allowedOrigins = [...new Set([
@@ -28,7 +29,7 @@ function response(body: unknown, status: number, origin: string) {
 }
 
 function insufficient(origin: string, reason: string) {
-  const answer = `I do not have enough approved evidence to answer this reliably. ${reason}`;
+  const answer = `I could not find enough reliable source evidence to answer this question. ${reason}`;
   return response({ status: 'insufficient_evidence', answer, assumptions: [], uncertainty: reason,
     nextActions: ['Ask the Copeit team to review a current official source and consult a qualified professional.'], citations: [], refs: [], model: null }, 200, origin);
 }
@@ -51,13 +52,12 @@ Deno.serve(async request => {
   const db = createClient(url, publishable, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false } });
   const { data: auth, error: authError } = await db.auth.getUser(token);
   if (authError || !auth.user) return response({ error: 'Session is invalid' }, 401, origin);
+  if (!auth.user.email_confirmed_at || auth.user.is_anonymous) return response({ error: 'Verify your email before using AI answers.' }, 403, origin);
 
-  let input: { tenantId?: unknown; question?: unknown; productId?: unknown };
+  let input: { action?: unknown; tenantId?: unknown; question?: unknown; productId?: unknown };
   try { input = await request.json(); } catch { return response({ error: 'Invalid request body' }, 400, origin); }
-  if (typeof input.tenantId !== 'string' || !/^[0-9a-f-]{36}$/i.test(input.tenantId) || typeof input.question !== 'string') return response({ error: 'Invalid input' }, 400, origin);
+  if (!input || typeof input.tenantId !== 'string' || !/^[0-9a-f-]{36}$/i.test(input.tenantId)) return response({ error: 'Invalid input' }, 400, origin);
   if (input.productId != null && (typeof input.productId !== 'string' || !/^[0-9a-f-]{36}$/i.test(input.productId))) return response({ error: 'Invalid productId' }, 400, origin);
-  const question = input.question.trim();
-  if (!question || question.length > 1200) return response({ error: 'Question must be 1–1200 characters' }, 400, origin);
 
   const serviceKey = keyset('SUPABASE_SECRET_KEYS', 'SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SECRET_KEY');
   if (!serviceKey) return response({ error: 'Server retrieval is not configured' }, 503, origin);
@@ -66,7 +66,20 @@ Deno.serve(async request => {
   // membership rather than relying on a second request's RLS context.
   const { data: membership, error: membershipError } = await server.from('memberships').select('tenant_id,role').eq('tenant_id', input.tenantId).eq('user_id', auth.user.id).maybeSingle();
   if (membershipError || !membership) return response({ error: 'Workspace access denied' }, 403, origin);
-  let productContext: unknown = null;
+  const { data: pilotFeature, error: pilotFeatureError } = await server
+    .from('tenant_feature_flags')
+    .select('enabled')
+    .eq('tenant_id', input.tenantId)
+    .eq('feature_key', 'rag_pilot')
+    .maybeSingle();
+  if (input.action === 'capabilities') {
+    if (pilotFeatureError) return response({ error: 'Pilot status is unavailable' }, 503, origin);
+    return response({ regulatoryAnswers: pilotFeature?.enabled !== false && Boolean(Deno.env.get('GEMINI_API_KEY')) }, 200, origin);
+  }
+  if (pilotFeatureError || pilotFeature?.enabled === false) return response({ error: 'AI answers are disabled for this workspace.' }, 403, origin);
+  const question = typeof input.question === 'string' ? input.question.trim() : '';
+  if (!question || question.length > 1200) return response({ error: 'Question must be 1–1200 characters' }, 400, origin);
+  let productContext: { product: Record<string, unknown>; facts: Record<string, unknown> | null } | null = null;
   if (input.productId) {
     const { data: product, error: productError } = await server.from('products').select('id,name,model,category,intended_use').eq('id', input.productId).eq('tenant_id', input.tenantId).maybeSingle();
     if (productError || !product) return response({ error: 'Product not found in this workspace' }, 404, origin);
@@ -74,22 +87,10 @@ Deno.serve(async request => {
     if (profileError) return response({ error: 'Product context is unavailable' }, 503, origin);
     productContext = { product, facts: profile?.context || null };
   }
-  // Live model access is an explicit server-side pilot release decision. The
-  // Vite mode only controls whether the browser offers the UI; it cannot grant
-  // a tenant access to retrieval or Gemini.
-  const { data: pilotFeature, error: pilotFeatureError } = await server
-    .from('tenant_feature_flags')
-    .select('enabled')
-    .eq('tenant_id', input.tenantId)
-    .eq('feature_key', 'rag_pilot')
-    .maybeSingle();
-  if (pilotFeatureError || !pilotFeature?.enabled) return response({ error: 'Pilot AI is not enabled for this workspace.' }, 403, origin);
   const questionHash = await sha256(question);
   const { data: withinRateLimit, error: rateLimitError } = await server.rpc('consume_rag_rate_limit', { p_tenant_id: input.tenantId, p_user_id: auth.user.id, p_limit: 20 });
   if (rateLimitError || !withinRateLimit) return response({ error: 'Too many requests. Please wait a minute and try again.' }, 429, origin);
-  if (needsProductSelection(question, input.productId)) {
-    return response({ status: 'needs_product_facts', answer: 'Select a product so I can use its recorded facts. The available evidence may still be insufficient to answer.', missingFacts: ['Select a product and record its intended use, destination, power source and radio features.'], assumptions: [], uncertainty: 'Product-specific requirements need product facts and reviewed evidence.', nextActions: ['Open product context and complete any missing details.'], citations: [], refs: [], model: null }, 200, origin);
-  }
+  const missingProduct = needsProductSelection(question, input.productId);
   async function recordAbstention(retrievalCount: number, modelName: string | null) {
     await server.from('rag_answer_audits').insert({ tenant_id: input.tenantId, user_id: auth.user.id, question_hash: questionHash,
       answer_status: 'insufficient_evidence', model: modelName, retrieval_count: retrievalCount,
@@ -98,20 +99,44 @@ Deno.serve(async request => {
 
   const apiKey = Deno.env.get('GEMINI_API_KEY');
   if (!apiKey) return response({ error: 'Gemini is not configured on the server' }, 503, origin);
+  const { data: quotaAvailable, error: quotaError } = await server.rpc('consume_public_ai_quota', { p_user_id: auth.user.id });
+  if (quotaError) return response({ error: 'AI usage limits are temporarily unavailable.' }, 503, origin);
+  if (!quotaAvailable) return response({ error: 'The daily AI allowance has been reached. Try again tomorrow. Workspace records remain available.' }, 429, origin);
   const model = Deno.env.get('GEMINI_MODEL') || 'gemini-3.5-flash-lite';
+  async function webFallback() {
+    try {
+      const result = await researchWeb({ apiKey, model, question, privateValues: [input.tenantId, input.productId, auth.user.email, productContext?.product?.name, productContext?.product?.model].filter(value => typeof value === 'string') });
+      if (!result) return insufficient(origin, 'Web search did not return sufficiently supported sources. Try a more specific public question.');
+      if (missingProduct) {
+        result.missingFacts = ['Select a product and record its destination, intended use, power source and radio features for a product-specific assessment.'];
+        result.uncertainty = 'This is general background. Product-specific applicability requires recorded product facts and qualified review.';
+      }
+      await server.from('rag_answer_audits').insert({ tenant_id: input.tenantId, user_id: auth.user.id, question_hash: questionHash, answer_status: 'answered', model, retrieval_count: 0, latency_ms: Math.round(performance.now() - startedAt), citations: result.refs.map(ref => ({ type: 'web', url: ref.url, answerOrigin: 'web_search' })) });
+      return response({ ...result, model }, 200, origin);
+    } catch (error) {
+      console.error('web_research_failed', error instanceof Error ? error.message : 'unknown');
+      if (error instanceof Error && error.message === 'web_provider_429') return response({ error: 'Google rejected the web research request. The workspace administrator should check Google Search grounding access, billing and quotas.' }, 503, origin);
+      return response({ error: 'Web research is temporarily unavailable. Please try again later. Workspace records remain available.' }, 502, origin);
+    }
+  }
+  if (!isRegulatoryQuestion(question) || missingProduct) return webFallback();
   let evidence: Record<string, unknown>[] = [];
   let queryEmbedding: number[] = [];
+  const retrievalQuery = buildRetrievalQuery(question, productContext);
   {
     const embeddingModel = Deno.env.get('GEMINI_EMBEDDING_MODEL') || 'gemini-embedding-2';
     let embeddingResponse: Response;
     try {
       embeddingResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(embeddingModel)}:embedContent`, {
         method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({ content: { parts: [{ text: `task: question answering | query: ${question}` }] }, output_dimensionality: 768 }),
+        body: JSON.stringify({ content: { parts: [{ text: `task: question answering | query: ${retrievalQuery}` }] }, output_dimensionality: 768 }),
         signal: AbortSignal.timeout(12000),
       });
     } catch { return response({ error: 'Gemini embeddings could not be reached' }, 502, origin); }
-    if (!embeddingResponse.ok) return response({ error: 'Gemini embedding request failed' }, 502, origin);
+    if (!embeddingResponse.ok) {
+      console.error('embedding_provider_error', embeddingResponse.status);
+      return response({ error: 'Gemini embedding request failed' }, 502, origin);
+    }
     const embeddingPayload = await embeddingResponse.json();
     const embedding = embeddingPayload?.embedding?.values;
     if (!Array.isArray(embedding) || embedding.length !== 768 || !embedding.every((value: unknown) => typeof value === 'number' && Number.isFinite(value))) return response({ error: 'Gemini returned an invalid embedding' }, 502, origin);
@@ -123,7 +148,7 @@ Deno.serve(async request => {
     evidence = (data || []).filter((item: { vector_similarity?: number }) => Number(item.vector_similarity || 0) >= minSimilarity);
     if (!evidence.length) {
       await recordAbstention(0, null);
-      return insufficient(origin, 'No current, permitted source passed the relevance threshold.');
+      return webFallback();
     }
   }
 
@@ -148,7 +173,10 @@ Deno.serve(async request => {
       signal: AbortSignal.timeout(20000),
     });
   } catch { return response({ error: 'Gemini could not be reached' }, 502, origin); }
-  if (!generated.ok) return response({ error: 'Gemini request failed' }, 502, origin);
+  if (!generated.ok) {
+    console.error('generation_provider_error', generated.status);
+    return response({ error: 'Gemini request failed' }, 502, origin);
+  }
   const payload = await generated.json();
   const text = payload?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || '').join('').trim();
   let structured: { status: string; answer: string; missingFacts: string[]; assumptions: string[]; uncertainty: string; nextActions: string[]; citations: { chunkId: string; claim: string }[] };
@@ -167,7 +195,7 @@ Deno.serve(async request => {
   }
   if (structured.status === 'insufficient_evidence') {
     await recordAbstention(evidence.length, model);
-    return insufficient(origin, 'The available evidence does not support a reliable answer.');
+    return webFallback();
   }
   // Approval can be revoked while the model is generating. Re-check before
   // returning the answer so stale or partially processed sources fail closed.
@@ -180,9 +208,10 @@ Deno.serve(async request => {
   }
   const latencyMs = Math.max(0, Math.round(performance.now() - startedAt));
   await server.from('rag_answer_audits').insert({ tenant_id: input.tenantId, user_id: auth.user.id, question_hash: questionHash,
-    answer_status: structured.status, model, retrieval_count: evidence.length, latency_ms: latencyMs, citations: structured.citations });
+    answer_status: structured.status, model, retrieval_count: evidence.length, latency_ms: latencyMs,
+    citations: citedChunkIds.map(chunkId => ({ chunkId })) });
   if (structured.citations.length) await server.from('answer_citations').insert(structured.citations.map(citation => ({ tenant_id: input.tenantId, chunk_id: citation.chunkId, question_hash: questionHash,
     retrieval_score: Number(evidence.find(item => String(item.chunk_id) === citation.chunkId)?.hybrid_score || 0) })));
   const citedIds = new Set(structured.citations.map(citation => citation.chunkId));
-  return response({ ...structured, refs: refs.filter(ref => citedIds.has(String(ref.id))), model }, 200, origin);
+  return response({ ...structured, answerOrigin: 'reviewed_sources', refs: refs.filter(ref => citedIds.has(String(ref.id))), model }, 200, origin);
 });

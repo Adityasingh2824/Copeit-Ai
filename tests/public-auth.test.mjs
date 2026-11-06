@@ -4,6 +4,18 @@ import { readFile } from 'node:fs/promises';
 
 const read = file => readFile(new URL(`../${file}`, import.meta.url), 'utf8');
 
+test('AI accepts modern tokens through in-function verification and exposes capability failures', async () => {
+  const config = await read('supabase/config.toml');
+  const handler = await read('supabase/functions/ask-copeit/index.ts');
+  const ui = await read('src/AskCopeit.jsx');
+  assert.match(config, /\[functions\.ask-copeit\]\s*verify_jwt = false/);
+  assert.match(handler, /auth\.getUser\(token\)/);
+  assert.ok(handler.indexOf('auth.getUser(token)') < handler.indexOf("from('memberships')"));
+  assert.match(handler, /!auth\.user\.email_confirmed_at \|\| auth\.user\.is_anonymous/);
+  assert.match(ui, /Retry AI connection/);
+  assert.match(ui, /setCapabilityError\('Could not check AI availability/);
+});
+
 test('public onboarding requires verified users and serializes the one-workspace limit', async () => {
   const migration = await read('supabase/migrations/20261101044435_public_workspace_launch.sql');
   assert.match(migration, /email_confirmed_at is not null/i);
@@ -17,7 +29,7 @@ test('public onboarding requires verified users and serializes the one-workspace
 test('onboarding supports workspace creation and invitation acceptance', async () => {
   const onboarding = await read('src/WorkspaceOnboarding.jsx');
   assert.match(onboarding, /can_provision_workspace/);
-  assert.match(onboarding, /Join by invitation/);
+  assert.match(onboarding, /join by invitation/i);
   assert.match(onboarding, /accept_workspace_invitation/);
   assert.match(onboarding, /rpc\('create_workspace'/);
 });

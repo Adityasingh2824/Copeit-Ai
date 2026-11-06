@@ -8,7 +8,7 @@ function latestVersion(source) {
 }
 
 function latestReview(version) {
-  return Array.isArray(version?.source_reviews) ? version.source_reviews[0] : null;
+  return [...(version?.source_reviews || [])].sort((a, b) => String(b.reviewed_at || '').localeCompare(String(a.reviewed_at || '')))[0];
 }
 
 export default function EvidenceLibrary({ demo, tenant, user, sources, onBack, onRefresh, onManageTeam }) {
@@ -86,7 +86,7 @@ export default function EvidenceLibrary({ demo, tenant, user, sources, onBack, o
   return <div className="billing-workspace evidence-workspace">
     <header className="billing-workspace-header"><span className="app-eyebrow">WORKSPACE / EVIDENCE</span><div className="evidence-header-actions">{!demo && <button onClick={onManageTeam}><Users size={17}/> Invite reviewer</button>}<button onClick={onBack}><ArrowLeft size={17}/> Back to workspace</button></div></header>
     <main className="billing-workspace-main">
-      <span className="app-eyebrow">PRIVATE SOURCE LIBRARY <span>✳</span></span>
+      <span className="app-eyebrow">PRIVATE SOURCE LIBRARY </span>
       <h1>Evidence with<br/><em>clear custody.</em></h1>
       <p className="billing-workspace-lede">Add an official public source with its publisher and original link. The file is held for independent review before it can be processed. TXT, Markdown and CSV only; PDFs are not supported yet.</p>
       {!demo && <section className="reviewer-guide" aria-label="Independent review required"><Users size={22}/><div><strong>Need an independent reviewer?</strong><p>Invite a second verified account before approving a source. The reviewer receives a one-time code to join this workspace.</p></div><button onClick={onManageTeam}>Invite reviewer</button></section>}
@@ -103,13 +103,14 @@ export default function EvidenceLibrary({ demo, tenant, user, sources, onBack, o
         </form>
       </section>
       <section className="list-surface evidence-list" aria-live="polite">
-        <div className="surface-head"><div><span>SOURCE REGISTER</span><h2>{sources.length ? `${sources.length} source${sources.length === 1 ? '' : 's'}` : 'No sources yet'}</h2></div><FileCheck2 size={24}/></div>
+        <div className="surface-head"><div><span>SOURCE REGISTER</span><h2>{sources.length ? `${sources.length} source${sources.length === 1 ? '' : 's'}` : 'No sources yet'}</h2></div>{demo ? <FileCheck2 size={24}/> : <button type="button" onClick={() => onRefresh()}>Refresh status</button>}</div>
         {!sources.length && <p className="billing-workspace-lede">No source has been uploaded to this workspace.</p>}
         {sources.map(source => {
           const version = latestVersion(source); const currentReview = latestReview(version); const reviewStatus = currentReview?.status || 'pending'; const isUploader = source.created_by === user?.id;
           return <article className="product-list-row" key={source.id}><div className="product-symbol"><FileCheck2 size={21}/></div><div><h3>{source.title}</h3><p>{source.source_type.replace('_', ' ')} · {version?.version_label || 'Version pending'}</p>{source.publisher_name && <small>{source.publisher_name}{source.source_published_at ? ` · ${source.source_published_at}` : ''}</small>}{source.canonical_url && <small><a href={source.canonical_url} target="_blank" rel="noreferrer">View canonical source</a></small>}<small>Review: {reviewStatus} · Processing: {version?.extraction_status || 'pending'}{source.retrieval_eligible ? ' · Retrieval eligible' : ''}</small>{currentReview?.rationale && <small>Decision note: {currentReview.rationale}</small>}</div><div className="evidence-actions">
             {reviewStatus === 'pending' && <button onClick={() => isUploader ? setNotice('Independent review is required. Sign in with the invited reviewer account to approve or reject this source.') : setReviewing(reviewing === version?.id ? null : version?.id)}>Review</button>}
-            {reviewStatus === 'approved' && version?.extraction_status !== 'ready' && <button onClick={() => queue(version.id)} disabled={busy === version.id}>{busy === version.id ? <LoaderCircle size={15}/> : 'Queue processing'}</button>}
+            {reviewStatus === 'approved' && source.source_type === 'official_guidance' && version?.extraction_status !== 'ready' && <button onClick={() => queue(version.id)} disabled={busy === version.id}>{busy === version.id ? <LoaderCircle size={15}/> : 'Queue processing'}</button>}
+            {reviewStatus === 'approved' && source.source_type === 'synthetic' && <small>Review fixture</small>}
             {reviewStatus === 'approved' && version?.extraction_status === 'ready' && <button onClick={() => download(version.id)} disabled={busy === version.id}><Download size={15}/>Download</button>}
             <span className={`status-pill ${reviewStatus === 'approved' ? 'green' : ''}`}>{reviewStatus}</span>
           </div>{reviewing === version?.id && <div className="evidence-review"><label>Review rationale<textarea minLength="3" maxLength="4000" value={rationale} onChange={event => setRationale(event.target.value)} placeholder="Why is this source approved or rejected?"/></label><div><button onClick={() => review(version.id, 'approved')} disabled={busy === version.id}><CheckCircle2 size={15}/>Approve source</button><button onClick={() => review(version.id, 'rejected')} disabled={busy === version.id}>Reject source</button></div><small>Write a decision rationale of at least three characters, then choose one decision. The uploader cannot approve or reject their own source.</small></div>}</article>;

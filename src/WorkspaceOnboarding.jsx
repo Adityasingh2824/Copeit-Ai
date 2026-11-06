@@ -5,13 +5,19 @@ import { supabase } from './lib/supabase';
 export default function WorkspaceOnboarding({ onCreated, onExit, onHome, Logo }) {
   const [inviteCode, setInviteCode] = useState('');
   const [name, setName] = useState('');
-  const [mode, setMode] = useState('join');
+  const [mode, setMode] = useState('create');
   const [canProvision, setCanProvision] = useState(false);
+  const [checking, setChecking] = useState(true);
   useEffect(() => {
     let active = true;
     supabase.rpc('can_provision_workspace').then(({ data, error }) => {
-      if (active) setCanProvision(!error && data === true);
-    });
+      if (!active) return;
+      setCanProvision(!error && data === true);
+      if (error) setNotice('Could not check workspace access. Reload to try again.');
+      else if (data !== true) { setMode('join'); setNotice('Verify your email before creating a workspace, or join by invitation.'); }
+    }).catch(() => {
+      if (active) setNotice('Could not connect. Reload to try again.');
+    }).finally(() => { if (active) setChecking(false); });
     return () => { active = false; };
   }, []);
   const [busy, setBusy] = useState(false);
@@ -39,8 +45,9 @@ export default function WorkspaceOnboarding({ onCreated, onExit, onHome, Logo })
   }
 
   return <div className="setup-page"><div className="setup-top"><button className="brand-home" onClick={onHome} aria-label="Go to Copeit AI home"><Logo/></button><button onClick={onExit}>Sign out</button></div><div className="setup-card"><div className="section-kicker">YOUR EXPORT WORKSPACE</div><h1>A clear start.<br/><em>A shared way forward.</em></h1><p>Create your team's workspace to organize product facts, evidence and next actions for India → EU electronics preparation.</p>
-    <p>Join by invitation. Ask your pilot workspace owner for an invitation code sent to your verified email.</p>
+    <p>Create a private workspace with your verified email, or join by invitation using a code from your team.</p>
+    {checking && <p role="status">Checking workspace access…</p>}
     {canProvision && <div className="auth-tabs" role="group" aria-label="Workspace setup"><button disabled={busy} className={mode === 'create' ? 'selected' : ''} onClick={() => { setMode('create'); setNotice(''); }}>Create workspace</button><button disabled={busy} className={mode === 'join' ? 'selected' : ''} onClick={() => { setMode('join'); setNotice(''); }}>Join a team</button></div>}
-    {mode === 'create' ? <form onSubmit={createWorkspace}><label htmlFor="workspace-name">Workspace name</label><input id="workspace-name" required minLength={2} maxLength={120} value={name} onChange={event => setName(event.target.value)} placeholder="e.g. Aster Electronics"/><button className="button-primary" disabled={busy}>{busy ? 'Creating…' : 'Create your workspace'}</button></form> : <form onSubmit={acceptInvitation}><label htmlFor="invite-code">Invitation code</label><input id="invite-code" required minLength={20} value={inviteCode} onChange={event => setInviteCode(event.target.value)} placeholder="Code from your workspace owner"/><button className="button-primary secondary" disabled={busy}><KeyRound size={17}/>{busy ? 'Joining…' : 'Join workspace'}</button></form>}
+    {!checking && (mode === 'create' ? <form onSubmit={createWorkspace}><label htmlFor="workspace-name">Workspace name</label><input id="workspace-name" required minLength={2} maxLength={120} value={name} onChange={event => setName(event.target.value)} placeholder="e.g. Aster Electronics"/><button className="button-primary" disabled={busy || !canProvision}>{busy ? 'Creating…' : 'Create your workspace'}</button></form> : <form onSubmit={acceptInvitation}><label htmlFor="invite-code">Invitation code</label><input id="invite-code" required minLength={20} value={inviteCode} onChange={event => setInviteCode(event.target.value)} placeholder="Code from your workspace owner"/><button className="button-primary secondary" disabled={busy}><KeyRound size={17}/>{busy ? 'Joining…' : 'Join workspace'}</button></form>)}
     {notice && <div className="form-message error" role="alert">{notice}</div>}<div className="setup-note"><ShieldCheck size={17}/>Your workspace is private. Only members you invite can access it.</div></div></div>;
 }

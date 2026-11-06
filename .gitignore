@@ -19,3 +19,8 @@ vite-staging-output.log
 tmp/
 output/
 .env.rag-test.local.txt
+
+# Local agent setup and pitch build artifacts
+.agents/
+skills-lock.json
+pitch_build/

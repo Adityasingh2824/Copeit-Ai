@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { configured, supabase } from './lib/supabase';
 import Turnstile from './Turnstile';
+import { authCallbackError } from './auth-callback';
 
 const redirectBase = `${window.location.origin}${window.location.pathname}`;
 
@@ -20,7 +21,10 @@ export default function AuthPage({ onBack, onPreview, Logo, mark }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState(null);
+  const [notice, setNotice] = useState(() => {
+    const text = authCallbackError(window.location.search, window.location.hash);
+    return text ? { error: true, text, action: 'resend' } : null;
+  });
   const [captchaToken, setCaptchaToken] = useState(null);
   const [captchaReset, setCaptchaReset] = useState(0);
   const captchaConfigured = Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY);
@@ -67,8 +71,7 @@ export default function AuthPage({ onBack, onPreview, Logo, mark }) {
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: email.trim(),
-        options: { emailRedirectTo: `${redirectBase}?confirmed=1`, ...(captchaToken ? { captchaToken } : {}) },
-      });
+        options: { emailRedirectTo: `${redirectBase}?confirmed=1`, ...(captchaToken ? { captchaToken } : {}) } });
       setNotice(error
         ? { error: true, text: friendlyError(error), action: error.code === 'email_already_confirmed' ? 'reset' : undefined }
         : { text: 'Confirmation email sent again. Check your inbox and spam folder.' });
@@ -104,8 +107,7 @@ export default function AuthPage({ onBack, onPreview, Logo, mark }) {
         result = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { emailRedirectTo: `${redirectBase}?confirmed=1`, ...(captchaToken ? { captchaToken } : {}) },
-        });
+          options: { emailRedirectTo: `${redirectBase}?confirmed=1`, ...(captchaToken ? { captchaToken } : {}) } });
         if (!result.error) {
           if (result.data.session) {
             setNotice({ text: 'Account created. Opening your workspace…' });
@@ -130,8 +132,7 @@ export default function AuthPage({ onBack, onPreview, Logo, mark }) {
       if (result?.error) setNotice({
         error: true,
         text: friendlyError(result.error),
-        action: result.error.code === 'invalid_credentials' ? 'reset' : result.error.code === 'email_not_confirmed' ? 'resend' : undefined,
-      });
+        action: result.error.code === 'invalid_credentials' ? 'reset' : result.error.code === 'email_not_confirmed' ? 'resend' : undefined });
     } catch {
       setNotice({ error: true, text: 'Could not reach Supabase Auth. Check your connection and try again.' });
     } finally {
@@ -156,7 +157,7 @@ export default function AuthPage({ onBack, onPreview, Logo, mark }) {
     <div className="auth-panel">
       <div className="auth-panel-top"><Logo/><button className="auth-mobile-back" onClick={onBack} aria-label="Back to home"><ArrowLeft size={18}/></button></div>
       <div className="auth-form-wrap">
-        <span className="auth-orbit"><Sparkles size={23}/></span>
+
         <div className="auth-kicker">COPEIT / YOUR WORKSPACE</div>
         <h2>{title}</h2><p>{description}</p>
         {mode !== 'reset' && mode !== 'new-password' && <div className="auth-tabs" role="tablist" aria-label="Account action"><button role="tab" aria-selected={mode === 'signin'} className={mode === 'signin' ? 'selected' : ''} onClick={() => changeMode('signin')}>Sign in</button><button role="tab" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'selected' : ''} onClick={() => changeMode('signup')}>Create account</button></div>}
